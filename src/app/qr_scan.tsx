@@ -34,6 +34,10 @@ export default function QrScan() {
     );
   }
 
+  function toggleCameraFacing() {
+    setFacing((current) => (current === "back" ? "front" : "back"));
+  }
+
   function handleBarCodeScanned({ type, data }) {
     setScanned(true);
 
@@ -73,6 +77,11 @@ export default function QrScan() {
             style={[styles.border, { borderColor: interpolateBorderColor }]}
           />
         </View>
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity style={styles.button} onPress={toggleCameraFacing}>
+            <Text style={styles.text}>Flip Camera</Text>
+          </TouchableOpacity>
+        </View>
       </CameraView>
     </View>
   );
@@ -100,7 +109,17 @@ const styles = StyleSheet.create({
     height: 200,
     borderWidth: 4,
     borderRadius: 10,
-    borderStyle: "dashed",
+  },
+  buttonContainer: {
+    flex: 1,
+    flexDirection: "row",
+    backgroundColor: "transparent",
+    margin: 64,
+  },
+  button: {
+    flex: 1,
+    alignSelf: "flex-end",
+    alignItems: "center",
   },
   text: {
     fontSize: 24,
