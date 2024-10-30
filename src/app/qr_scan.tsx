@@ -1,38 +1,13 @@
 import { CameraView, CameraType, useCameraPermissions } from "expo-camera";
 import { useRouter } from "expo-router";
 import { useRef, useState } from "react";
-import {
-  Animated,
-  Button,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Animated, StyleSheet, View } from "react-native";
 
 export default function QrScan() {
   const [facing, setFacing] = useState<CameraType>("back");
-  const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const router = useRouter();
   const borderColor = useRef(new Animated.Value(0)).current;
-
-  if (!permission) {
-    // Camera permissions are still loading.
-    return <View />;
-  }
-
-  if (!permission.granted) {
-    // Camera permissions are not granted yet.
-    return (
-      <View style={styles.container}>
-        <Text style={styles.message}>
-          We need your permission to show the camera
-        </Text>
-        <Button onPress={requestPermission} title="grant permission" />
-      </View>
-    );
-  }
 
   function toggleCameraFacing() {
     setFacing((current) => (current === "back" ? "front" : "back"));
@@ -59,7 +34,7 @@ export default function QrScan() {
 
   const interpolateBorderColor = borderColor.interpolate({
     inputRange: [0, 1],
-    outputRange: ["green", "blue"],
+    outputRange: ["#3AC9D8", "#ffffff80"],
   });
 
   return (
@@ -76,11 +51,6 @@ export default function QrScan() {
           <Animated.View
             style={[styles.border, { borderColor: interpolateBorderColor }]}
           />
-        </View>
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.button} onPress={toggleCameraFacing}>
-            <Text style={styles.text}>Flip Camera</Text>
-          </TouchableOpacity>
         </View>
       </CameraView>
     </View>
