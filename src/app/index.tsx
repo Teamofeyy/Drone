@@ -1,9 +1,9 @@
 import { Text, View, Image, Alert } from "react-native";
 import { StatusBar } from "expo-status-bar";
-import { Link, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { useCameraPermissions } from "expo-camera";
-import { images } from "../assets/images/images";
 import HomeButton from "@/components/HomeButton";
+import QrIcon from "@/assets/svg/QrIcon";
 
 export default function App() {
   const [permission, requestPermission] = useCameraPermissions();
@@ -25,11 +25,18 @@ export default function App() {
   };
 
   return (
-    <View className="flex-1 justify-center items-center bg-[#3AC9D8]">
-      <Image source={images.qr_icon} />
+    <View className="flex-1 justify-center items-center bg-accent px-6">
+      <QrIcon />
+      <Text className="text-center font-pmedium  text-white mb-8">
+        Чтобы войти в приложение, отсканируйте qr-код на дроне.
+      </Text>
       <StatusBar style="auto" />
-      <Link href="/qr_scan">Перейти к сканеру</Link>
-      <HomeButton title="Авторизоваться" handlePress={handleNavigateToQrScan} />
+      <HomeButton
+        title="Авторизоваться"
+        handlePress={handleNavigateToQrScan}
+        containerStyles="w-[319px]  py-4 rounded-[8px] bg-white"
+        textStyles="font-psemibold text-xl"
+      />
     </View>
   );
 }
