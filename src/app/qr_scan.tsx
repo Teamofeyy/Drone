@@ -1,7 +1,8 @@
-import { CameraView, CameraType, useCameraPermissions } from "expo-camera";
+import { CameraView, CameraType } from "expo-camera";
 import { useRouter } from "expo-router";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { Animated, StyleSheet, View } from "react-native";
+import Toast from "react-native-toast-message";
 
 export default function QrScan() {
   const [facing, setFacing] = useState<CameraType>("back");
@@ -10,12 +11,10 @@ export default function QrScan() {
   const borderColor = useRef(new Animated.Value(0)).current;
 
   function toggleCameraFacing() {
-    setFacing((current) => (current === "back" ? "front" : "back"));
+    setFacing(facing === "back" ? "front" : "back");
   }
 
   function handleBarCodeScanned({ type, data }) {
-    setScanned(true);
-
     Animated.sequence([
       Animated.timing(borderColor, {
         toValue: 1,
@@ -29,8 +28,23 @@ export default function QrScan() {
       }),
     ]).start(() => {
       router.push("/home");
+      setScanned(false);
     });
   }
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (!scanned) {
+        Toast.show({
+          type: "error",
+          text1: "QR-код не найден",
+          text2: "Попробуйте снова.",
+        });
+      }
+    }, 5000);
+
+    return () => clearInterval(interval); // Очищаем таймер при размонтировании
+  }, [scanned]);
 
   const interpolateBorderColor = borderColor.interpolate({
     inputRange: [0, 1],
@@ -53,6 +67,7 @@ export default function QrScan() {
           />
         </View>
       </CameraView>
+      <Toast />
     </View>
   );
 }
@@ -61,10 +76,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: "center",
-  },
-  message: {
-    textAlign: "center",
-    paddingBottom: 10,
   },
   camera: {
     flex: 1,
@@ -79,21 +90,5 @@ const styles = StyleSheet.create({
     height: 200,
     borderWidth: 4,
     borderRadius: 10,
-  },
-  buttonContainer: {
-    flex: 1,
-    flexDirection: "row",
-    backgroundColor: "transparent",
-    margin: 64,
-  },
-  button: {
-    flex: 1,
-    alignSelf: "flex-end",
-    alignItems: "center",
-  },
-  text: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "white",
   },
 });
