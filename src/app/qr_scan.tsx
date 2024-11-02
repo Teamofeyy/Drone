@@ -7,6 +7,7 @@ import Toast from "react-native-toast-message";
 export default function QrScan() {
   const [facing, setFacing] = useState<CameraType>("back");
   const [scanned, setScanned] = useState(false);
+  const [isCameraActive, setIsCameraActive] = useState(true); // Добавлено состояние камеры
   const router = useRouter();
   const borderColor = useRef(new Animated.Value(0)).current;
 
@@ -15,6 +16,9 @@ export default function QrScan() {
   }
 
   function handleBarCodeScanned({ type, data }) {
+    setScanned(true);
+    setIsCameraActive(false); // Останавливаем камеру
+
     Animated.sequence([
       Animated.timing(borderColor, {
         toValue: 1,
@@ -28,7 +32,6 @@ export default function QrScan() {
       }),
     ]).start(() => {
       router.push("/home");
-      setScanned(false);
     });
   }
 
@@ -53,20 +56,22 @@ export default function QrScan() {
 
   return (
     <View style={styles.container}>
-      <CameraView
-        style={styles.camera}
-        facing={facing}
-        barcodeScannerSettings={{
-          barcodeTypes: ["qr"],
-        }}
-        onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
-      >
-        <View style={styles.overlay}>
-          <Animated.View
-            style={[styles.border, { borderColor: interpolateBorderColor }]}
-          />
-        </View>
-      </CameraView>
+      {isCameraActive && (
+        <CameraView
+          style={styles.camera}
+          facing={facing}
+          barcodeScannerSettings={{
+            barcodeTypes: ["qr"],
+          }}
+          onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
+        >
+          <View style={styles.overlay}>
+            <Animated.View
+              style={[styles.border, { borderColor: interpolateBorderColor }]}
+            />
+          </View>
+        </CameraView>
+      )}
       <Toast />
     </View>
   );
