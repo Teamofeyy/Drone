@@ -14,7 +14,7 @@ jobs:
       with:
         node-version: '20'  # Использование Node.js 20
 
-    - name: Get closed issues
+    - name: Get closed issues and comments
       run: |
         echo "Fetching closed issues..."
         response=$(curl -s -H "Authorization: Bearer ${{ secrets.MY_GITHUB_TOKEN }}" \
@@ -23,7 +23,9 @@ jobs:
         if [ -z "$response" ]; then
           echo "No issues found." > report.txt
         else
-          echo "$response" | jq -r '.[] | select(.html_url and .title and .body) | "- [\(.title)](\(.html_url))\n\n\(.body)\n"' > report.txt
+          # Обрабатываем каждую задачу
+          echo "$response" | jq -r '.[] | select(.html_url and .title and .body) | 
+            "- [\(.title)](\(.html_url))\n\n\(.body)\n\nComments:\n\(.comments_url | @sh) | jq -r \\".[] | .body\\""' > report.txt
         fi
 
     - name: Check if issues were found
