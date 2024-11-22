@@ -32,6 +32,12 @@ jobs:
           echo "No closed issues found." > report.txt
         fi
 
+    - name: Read report content into variable
+      id: read_report
+      run: |
+        REPORT_CONTENT=$(cat report.txt)
+        echo "report_content=$REPORT_CONTENT" >> $GITHUB_ENV
+
     - name: Send email with report
       uses: dawidd6/action-send-mail@v4
       with:
@@ -41,6 +47,6 @@ jobs:
         password: ${{ secrets.EMAIL_PASSWORD }}  # Добавьте это в секцию Secrets
         subject: Weekly Closed Issues Report
         body: |
-          $(cat report.txt)  # Используйте `cat` для вставки содержимого файла
+          ${{ env.report_content }}  # Используем переменную для вставки содержимого файла
         to: timarnd06@gmail.com
         from: timarnd06@gmail.com
