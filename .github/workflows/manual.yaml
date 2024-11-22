@@ -17,14 +17,19 @@ jobs:
     - name: Get closed issues
       run: |
         echo "Fetching closed issues..."
-        response=$(curl -s -H "Authorization: Bearer ${{ secrets.MY_GITHUB_TOKEN }}" \
-          "https://api.github.com/repos/${{ github.repository }}/issues?state=closed")
+        response=$(curl -s -H "Authorization: ***" \
+          "https://api.github.com/repos/Teamofeyy/Drone/issues?state=closed")
         echo "Response from GitHub API: $response"
         if [ -z "$response" ]; then
           echo "No issues found." > report.txt
         else
           echo "$response" | jq -r '.[] | select(.html_url and .title and .body) | 
-            "- [\(.title)](\(.html_url))\n\n\(.body)\n\nComments:\n\(.comments_url | @sh) | jq -r \\".[] | .body\\""' > report.txt
+            "- [\(.title)](\(.html_url))\n\n\(.body)\n\nComments:"' > report.txt
+            
+          for issue_url in $(echo "$response" | jq -r '.[].comments_url'); do
+            comments=$(curl -s -H "Authorization: ***" "$issue_url")
+            echo "$comments" | jq -r '.[] | "- \(.user.login): \(.body)"' >> report.txt
+          done
         fi
 
     - name: Check if issues were found
