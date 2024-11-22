@@ -29,7 +29,7 @@ jobs:
           echo "Found closed issues"
           cat report.txt
         else
-          echo "No closed issues found."
+          echo "No closed issues found." > report.txt
         fi
 
     - name: Send email with report
@@ -41,6 +41,6 @@ jobs:
         password: ${{ secrets.EMAIL_PASSWORD }}  # Добавьте это в секцию Secrets
         subject: Weekly Closed Issues Report
         body: |
-          $(< report.txt)
+          $(cat report.txt)  # Используйте `cat` для вставки содержимого файла
         to: timarnd06@gmail.com
         from: timarnd06@gmail.com
