@@ -1,7 +1,7 @@
 name: Weekly Closed Issues Report
 on:
   schedule:
-    - cron: "55 09 22 11 FRI" # Запуск каждую пятницу в 15:00 UTC
+    - cron: "05 10 22 11 FRI" # Запуск каждую пятницу в 15:00 UTC
 
 jobs:
   generate-and-send-report:
