@@ -23,13 +23,7 @@ jobs:
         if [ -z "$response" ]; then
           echo "No issues found." > report.txt
         else
-          echo "$response" | jq -r '.[] | select(.html_url and .title) | "- [\(.title)](\(.html_url))\n\(.body)"' > report.txt
-          
-          # Получаем все комментарии для каждой задачи
-          for issue_url in $(echo "$response" | jq -r '.[].comments_url'); do
-            comments=$(curl -s -H "Authorization: Bearer ${{ secrets.MY_GITHUB_TOKEN }}" "$issue_url")
-            echo "$comments" | jq -r '.[] | "- \(.user.login): \(.body)"' >> report.txt
-          done
+          echo "$response" | jq -r '.[] | select(.html_url and .title and .body) | "- [\(.title)](\(.html_url))\n\n\(.body)\n"' > report.txt
         fi
 
     - name: Check if issues were found
@@ -52,6 +46,14 @@ jobs:
       with:
         name: weekly-report
 
+    - name: Read report content
+      id: read-report
+      run: |
+        report_content=$(cat report.txt)
+        echo "report_content<<EOF" >> $GITHUB_ENV
+        echo "$report_content" >> $GITHUB_ENV
+        echo "EOF" >> $GITHUB_ENV
+
     - name: Send email with report
       uses: dawidd6/action-send-mail@v4
       with:
@@ -60,7 +62,6 @@ jobs:
         username: ${{ secrets.EMAIL_USERNAME }}  # Добавьте это в секцию Secrets
         password: ${{ secrets.EMAIL_PASSWORD }}  # Добавьте это в секцию Secrets
         subject: Weekly Closed Issues Report
-        body: |
-          $(cat report.txt)  # Используем команду cat для вставки содержимого файла
+        body: ${{ env.report_content }}  # Использование переменной из шага "Read report content"
         to: timarnd06@gmail.com
         from: timarnd06@gmail.com
