@@ -27,7 +27,7 @@ jobs:
           echo "No issues found or invalid repository." > report.txt
         else
           echo "$response" | jq -r '.[] | select(.html_url and .title and .body) | 
-          "- [\(.title)](\(.html_url))\n\n\(.body)\n\nComments:"' > report.txt
+            "- [\(.title)](\(.html_url))\n\n\(.body)\n\nComments:"' > report.txt
 
           for issue_url in $(echo "$response" | jq -r '.[].comments_url'); do
             comments=$(curl -s -H "Authorization: Bearer ${{ secrets.MY_GITHUB_TOKEN }}" "$issue_url")
