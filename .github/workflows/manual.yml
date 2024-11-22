@@ -2,37 +2,34 @@ name: Weekly Closed Issues Report
 
 on:
   schedule:
-    - cron: "0 08 * * 5" # Запуск каждую пятницу в 12:00 UTC
+    - cron: "35 08 20 * FRI" # Запуск каждую пятницу в 15:00 UTC (18:00 UTC+3)
 
 jobs:
   generate-and-send-report:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
-
     - name: Get closed issues from last week
       id: get_issues
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        LAST_WEEK=$(date --date="7 days ago" '+%Y-%m-%dT%H:%M:%SZ')
+        LAST_WEEK=$(date --utc --date="7 days ago" '+%Y-%m-%dT%H:%M:%SZ')
         curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
           "https://api.github.com/repos/${{ github.repository }}/issues?state=closed&since=$LAST_WEEK" \
           | jq '.[] | {title: .title, url: .html_url}' > closed_issues.json
 
-    - name: Format issues into an email
-      id: format_issues
+    - name: Format issues into a report
+      id: format_report
       run: |
         if [ -s closed_issues.json ]; then
-          echo "Выполненные задачи за эту неделю:" > report.txt
+          echo "Weekly Closed Issues Report:" > report.txt
           jq -r '.[] | "- [\(.title)](\(.url))"' closed_issues.json >> report.txt
         else
-          echo "На этой недели не сделано ни одной задачи" > report.txt
+          echo "No issues closed this week." > report.txt
         fi
 
-    - name: Send email
+    - name: Send email with report
       uses: dawidd6/action-send-mail@v3
       with:
         server_address: smtp.gmail.com
