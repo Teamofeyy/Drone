@@ -23,9 +23,16 @@ jobs:
         if [ -z "$response" ]; then
           echo "No issues found." > report.txt
         else
-          # Обрабатываем каждую задачу
-          echo "$response" | jq -r '.[] | select(.html_url and .title and .body) | 
-            "- [\(.title)](\(.html_url))\n\n\(.body)\n\nComments:\n\(.comments_url | @sh) | jq -r \\".[] | .body\\""' > report.txt
+          # Обрабатываем каждую задачу и добавляем комментарии
+          echo "$response" | jq -r '.[] | select(.html_url and .title and .body and .comments_url) | 
+            "- [\(.title)](\(.html_url))\n\n\(.body)\n\nComments:"' > report.txt
+
+          # Получаем комментарии для каждой задачи
+          issue_urls=$(echo "$response" | jq -r '.[] | select(.comments_url) | .comments_url')
+          for url in $issue_urls; do
+            comments=$(curl -s -H "Authorization: Bearer ${{ secrets.MY_GITHUB_TOKEN }}" "$url")
+            echo "$comments" | jq -r '.[] | .body' >> report.txt
+          done
         fi
 
     - name: Check if issues were found
@@ -67,3 +74,4 @@ jobs:
         body: ${{ env.report_content }}  # Использование переменной из шага "Read report content"
         to: timarnd06@gmail.com
         from: timarnd06@gmail.com
+        
