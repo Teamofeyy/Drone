@@ -27,9 +27,18 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
-          "https://api.github.com/repos/${{ github.repository }}/issues?state=closed&since=${{ env.THIS_WEEK_START }}" \
-          | jq -r '.[] | select(.html_url and .title) | "- [\(.title)](\(.html_url))"' > report.txt
+        echo "Fetching closed issues from this week..."
+        response=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
+          "https://api.github.com/repos/${{ github.repository }}/issues?state=closed&since=${{ env.THIS_WEEK_START }}")
+
+        echo "Response from GitHub API: $response"
+
+        # Проверим, что ответ - это массив
+        if echo "$response" | jq -e 'type == "array"' > /dev/null; then
+          echo "$response" | jq -r '.[] | select(.html_url and .title) | "- [\(.title)](\(.html_url))"' > report.txt
+        else
+          echo "No issues found or invalid response from GitHub API." > report.txt
+        fi
 
     - name: Read report content
       run: |
