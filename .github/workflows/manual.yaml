@@ -46,6 +46,14 @@ jobs:
       with:
         name: weekly-report
 
+    - name: Read report content
+      id: read-report
+      run: |
+        report_content=$(cat report.txt)
+        echo "report_content<<EOF" >> $GITHUB_ENV
+        echo "$report_content" >> $GITHUB_ENV
+        echo "EOF" >> $GITHUB_ENV
+
     - name: Send email with report
       uses: dawidd6/action-send-mail@v4
       with:
@@ -54,7 +62,6 @@ jobs:
         username: ${{ secrets.EMAIL_USERNAME }}  # Добавьте это в секцию Secrets
         password: ${{ secrets.EMAIL_PASSWORD }}  # Добавьте это в секцию Secrets
         subject: Weekly Closed Issues Report
-        body: |
-          $(cat report.txt)  # Используем команду cat для вставки содержимого файла
+        body: ${{ env.report_content }}  # Использование переменной из шага "Read report content"
         to: timarnd06@gmail.com
         from: timarnd06@gmail.com
