@@ -29,6 +29,6 @@ jobs:
         password: ${{ secrets.EMAIL_PASSWORD }}  # Добавьте это в секцию Secrets
         subject: Weekly Closed Issues Report
         body: |
-          $(cat report.txt)
+          $(< report.txt)
         to: timarnd06@gmail.com
         from: timarnd06@gmail.com
