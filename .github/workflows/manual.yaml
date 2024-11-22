@@ -47,6 +47,7 @@ jobs:
           echo "report_content=$REPORT_CONTENT" >> $GITHUB_ENV
         else
           echo "report_content=No issues closed this week." >> $GITHUB_ENV
+        fi
 
     - name: Send email with report
       uses: dawidd6/action-send-mail@v4
