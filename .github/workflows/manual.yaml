@@ -6,8 +6,6 @@ on:
 jobs:
   test-email:
     runs-on: ubuntu-latest
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE20: true
     steps:
     - name: Set up Node.js 20
       uses: actions/setup-node@v4
@@ -33,20 +31,15 @@ jobs:
         fi
 
     - name: Upload report.txt as artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: weekly-report
         path: report.txt
 
     - name: Download report artifact
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: weekly-report
-
-    - name: Read report content and set as environment variable
-      run: |
-        REPORT_CONTENT=$(cat report.txt)
-        echo "REPORT_CONTENT=$REPORT_CONTENT" >> $GITHUB_ENV
 
     - name: Send email with report
       uses: dawidd6/action-send-mail@v4
@@ -56,6 +49,7 @@ jobs:
         username: ${{ secrets.EMAIL_USERNAME }}  # Добавьте это в секцию Secrets
         password: ${{ secrets.EMAIL_PASSWORD }}  # Добавьте это в секцию Secrets
         subject: Weekly Closed Issues Report
-        body: ${{ env.REPORT_CONTENT }}  # Используем переменную окружения с отчетом
+        body: |
+          $(cat report.txt)  # Используем команду cat для вставки содержимого файла
         to: timarnd06@gmail.com
         from: timarnd06@gmail.com
