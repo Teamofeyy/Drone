@@ -1,7 +1,8 @@
 name: Weekly Closed Issues Report
 on:
   schedule:
-    - cron: "48 09 20 * FRI" # Запуск каждую пятницу в 15:00 UTC (18:00 UTC+3)
+    - cron: "55 09 22 11 FRI" # Запуск каждую пятницу в 15:00 UTC
+
 jobs:
   generate-and-send-report:
     runs-on: ubuntu-latest
@@ -11,7 +12,7 @@ jobs:
     - name: Set up Node.js 20
       uses: actions/setup-node@v4
       with:
-        node-version: '20'  # Указываем, чтобы использовать Node.js 20
+        node-version: '20'  # Использование Node.js 20
     - name: Get closed issues from last week
       id: get_issues
       env:
@@ -20,7 +21,7 @@ jobs:
         LAST_WEEK=$(date --utc --date="7 days ago" '+%Y-%m-%dT%H:%M:%SZ')
         curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
           "https://api.github.com/repos/${{ github.repository }}/issues?state=closed&since=$LAST_WEEK" \
-          | jq '.[] | {title: .title, url: .html_url}' > closed_issues.json
+          | jq '.[] | select(.pull_request == null) | {title: .title, url: .html_url}' > closed_issues.json
     - name: Format issues into a report
       id: format_report
       run: |
