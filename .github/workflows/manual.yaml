@@ -32,10 +32,10 @@ jobs:
           echo "No closed issues found." > report.txt
         fi
 
-    - name: Read report content into variable
-      id: read_report
+    - name: Encode report content as base64
+      id: encode_report
       run: |
-        REPORT_CONTENT=$(cat report.txt)
+        REPORT_CONTENT=$(cat report.txt | base64)
         echo "report_content=$REPORT_CONTENT" >> $GITHUB_ENV
 
     - name: Send email with report
@@ -50,3 +50,8 @@ jobs:
           ${{ env.report_content }}  # Используем переменную для вставки содержимого файла
         to: timarnd06@gmail.com
         from: timarnd06@gmail.com
+
+    - name: Decode report content
+      run: |
+        echo "$REPORT_CONTENT" | base64 --decode > report_decoded.txt
+        cat report_decoded.txt
