@@ -21,7 +21,7 @@ export default function App() {
         return;
       }
     }
-    router.push("/qr_scan");
+    router.push("/(tabs)/home");
   };
 
   return (
