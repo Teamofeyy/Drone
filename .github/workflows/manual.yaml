@@ -1,0 +1,115 @@
+name: Test Email Report
+
+on:
+  schedule:
+    - cron: '0 13 * * 5'
+
+jobs:
+  test-email:
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE20: true
+    steps:
+    - name: Set up Node.js 20
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'  # Использование Node.js 20
+
+    - name: Calculate start and end of the current week
+      run: |
+        # Получаем текущую дату
+        current_date=$(date +%Y-%m-%d)
+        
+        # Находим дату понедельника этой недели
+        start_of_week=$(date -d 'last monday' +%Y-%m-%d)
+        
+        # Находим дату пятницы этой недели
+        end_of_week=$(date -d 'next friday' +%Y-%m-%d)
+        
+        echo "Current date: $current_date"
+        echo "Start of week (Monday): $start_of_week"
+        echo "End of week (Friday): $end_of_week"
+        
+        echo "START_OF_WEEK=$start_of_week" >> $GITHUB_ENV
+        echo "END_OF_WEEK=$end_of_week" >> $GITHUB_ENV
+
+    - name: Get closed issues
+      run: |
+        echo "Fetching closed issues..."
+        response=$(curl -s -H "Authorization: Bearer ${{ secrets.MY_GITHUB_TOKEN }}" \
+          -H "Accept: application/vnd.github.v3+json" \
+          "https://api.github.com/repos/${{ github.repository }}/issues?state=closed")
+        
+        echo "Response from GitHub API: $response"
+        
+        if [[ "$response" == *"Not Found"* || -z "$response" ]]; then
+          echo "No issues found or invalid repository." > report.txt
+        else
+          # Проходим по всем задачам
+          for issue in $(echo "$response" | jq -r '.[] | @base64'); do
+            # Декодируем каждую задачу из base64
+            issue_title=$(echo "$issue" | base64 --decode | jq -r '.title')
+            issue_url=$(echo "$issue" | base64 --decode | jq -r '.html_url')
+            issue_body=$(echo "$issue" | base64 --decode | jq -r '.body')
+            issue_comments_url=$(echo "$issue" | base64 --decode | jq -r '.comments_url')
+            issue_closed_at=$(echo "$issue" | base64 --decode | jq -r '.closed_at')
+            
+            # Преобразуем дату закрытия в формат, с которым можно работать
+            issue_closed_date=$(date -d "$issue_closed_at" +%Y-%m-%d)
+            
+            # Проверяем, закрыта ли задача в пределах текущей недели
+            if [[ "$issue_closed_date" > "$START_OF_WEEK" && "$issue_closed_date" < "$END_OF_WEEK" ]]; then
+              # Добавляем информацию о задаче
+              echo "- [$issue_title]($issue_url)" >> report.txt
+              echo "$issue_body" >> report.txt
+              echo "Comments:" >> report.txt
+              
+              # Получаем комментарии для текущей задачи
+              comments=$(curl -s -H "Authorization: Bearer ${{ secrets.MY_GITHUB_TOKEN }}" "$issue_comments_url")
+              echo "$comments" | jq -r '.[] | "- \(.user.login): \(.body)"' >> report.txt
+              
+              # Добавляем пустую строку для разделения задач
+              echo "" >> report.txt
+            fi
+          done
+        fi
+
+    - name: Check if issues were found
+      run: |
+        if [ -s report.txt ]; then
+          echo "Found closed issues"
+          cat report.txt
+        else
+          echo "No closed issues found." > report.txt
+        fi
+
+    - name: Upload report.txt as artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: weekly-report
+        path: report.txt
+
+    - name: Download report artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: weekly-report
+
+    - name: Read report content
+      id: read-report
+      run: |
+        report_content=$(cat report.txt)
+        echo "report_content<<EOF" >> $GITHUB_ENV
+        echo "$report_content" >> $GITHUB_ENV
+        echo "EOF" >> $GITHUB_ENV
+
+    - name: Send email with report
+      uses: dawidd6/action-send-mail@v4
+      with:
+        server_address: smtp.gmail.com
+        server_port: 587
+        username: ${{ secrets.EMAIL_USERNAME }}  # Добавьте это в секцию Secrets
+        password: ${{ secrets.EMAIL_PASSWORD }}  # Добавьте это в секцию Secrets
+        subject: Weekly Closed Issues Report
+        body: ${{ env.report_content }}  # Использование переменной из шага "Read report content"
+        to: timarnd06@gmail.com
+        from: timarnd06@gmail.com
