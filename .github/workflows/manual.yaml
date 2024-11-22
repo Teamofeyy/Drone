@@ -2,7 +2,7 @@ name: Test Email Report
 
 on:
   schedule:
-    - cron: '0 01 * * 1'
+    - cron: '45 13 22 11 *'
 
 jobs:
   test-email:
