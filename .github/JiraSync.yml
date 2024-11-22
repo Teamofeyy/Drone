@@ -1,7 +1,7 @@
 name: Weekly Closed Issues Report
 on:
   schedule:
-    - cron: "45 08 20 * FRI" # Запуск каждую пятницу в 15:00 UTC (18:00 UTC+3)
+    - cron: "35 09 20 * FRI" # Запуск каждую пятницу в 15:00 UTC (18:00 UTC+3)
 jobs:
   generate-and-send-report:
     runs-on: ubuntu-latest
@@ -9,7 +9,7 @@ jobs:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE20: true
     steps:
     - name: Set up Node.js 20
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v4
       with:
         node-version: '20'  # Указываем, чтобы использовать Node.js 20
     - name: Get closed issues from last week
