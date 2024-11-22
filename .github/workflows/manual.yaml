@@ -20,18 +20,31 @@ jobs:
         response=$(curl -s -H "Authorization: Bearer ${{ secrets.MY_GITHUB_TOKEN }}" \
           -H "Accept: application/vnd.github.v3+json" \
           "https://api.github.com/repos/${{ github.repository }}/issues?state=closed")
-
+        
         echo "Response from GitHub API: $response"
-
+        
         if [[ "$response" == *"Not Found"* || -z "$response" ]]; then
           echo "No issues found or invalid repository." > report.txt
         else
-          echo "$response" | jq -r '.[] | select(.html_url and .title and .body) | 
-            "- [\(.title)](\(.html_url))\n\n\(.body)\n\nComments:"' > report.txt
-
-          for issue_url in $(echo "$response" | jq -r '.[].comments_url'); do
-            comments=$(curl -s -H "Authorization: Bearer ${{ secrets.MY_GITHUB_TOKEN }}" "$issue_url")
+          # Проходим по всем задачам
+          for issue in $(echo "$response" | jq -r '.[] | @base64'); do
+            # Декодируем каждую задачу из base64
+            issue_title=$(echo "$issue" | base64 --decode | jq -r '.title')
+            issue_url=$(echo "$issue" | base64 --decode | jq -r '.html_url')
+            issue_body=$(echo "$issue" | base64 --decode | jq -r '.body')
+            issue_comments_url=$(echo "$issue" | base64 --decode | jq -r '.comments_url')
+        
+            # Добавляем информацию о задаче
+            echo "- [$issue_title]($issue_url)" >> report.txt
+            echo "$issue_body" >> report.txt
+            echo "Comments:" >> report.txt
+        
+            # Получаем комментарии для текущей задачи
+            comments=$(curl -s -H "Authorization: Bearer ${{ secrets.MY_GITHUB_TOKEN }}" "$issue_comments_url")
             echo "$comments" | jq -r '.[] | "- \(.user.login): \(.body)"' >> report.txt
+        
+            # Добавляем пустую строку для разделения задач
+            echo "" >> report.txt
           done
         fi
 
