@@ -38,6 +38,16 @@ jobs:
         name: weekly-report
         path: report.txt
 
+    - name: Download report artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: weekly-report
+
+    - name: Read report content and set as environment variable
+      run: |
+        REPORT_CONTENT=$(cat report.txt)
+        echo "REPORT_CONTENT=$REPORT_CONTENT" >> $GITHUB_ENV
+
     - name: Send email with report
       uses: dawidd6/action-send-mail@v4
       with:
@@ -46,12 +56,6 @@ jobs:
         username: ${{ secrets.EMAIL_USERNAME }}  # Добавьте это в секцию Secrets
         password: ${{ secrets.EMAIL_PASSWORD }}  # Добавьте это в секцию Secrets
         subject: Weekly Closed Issues Report
-        body: |
-          $(cat report.txt)  # Мы можем напрямую получить данные из артефакта
+        body: ${{ env.REPORT_CONTENT }}  # Используем переменную окружения с отчетом
         to: timarnd06@gmail.com
         from: timarnd06@gmail.com
-
-    - name: Download report artifact
-      uses: actions/download-artifact@v3
-      with:
-        name: weekly-report
