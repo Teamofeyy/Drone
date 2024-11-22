@@ -1,7 +1,8 @@
 name: Test Email Report
 
 on:
-  workflow_dispatch:  # Триггер для ручного запуска
+  schedule:
+    - cron: '0 13 * * 5'
 
 jobs:
   test-email:
@@ -13,6 +14,24 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '20'  # Использование Node.js 20
+
+    - name: Calculate start and end of the current week
+      run: |
+        # Получаем текущую дату
+        current_date=$(date +%Y-%m-%d)
+        
+        # Находим дату понедельника этой недели
+        start_of_week=$(date -d 'last monday' +%Y-%m-%d)
+        
+        # Находим дату пятницы этой недели
+        end_of_week=$(date -d 'next friday' +%Y-%m-%d)
+        
+        echo "Current date: $current_date"
+        echo "Start of week (Monday): $start_of_week"
+        echo "End of week (Friday): $end_of_week"
+        
+        echo "START_OF_WEEK=$start_of_week" >> $GITHUB_ENV
+        echo "END_OF_WEEK=$end_of_week" >> $GITHUB_ENV
 
     - name: Get closed issues
       run: |
@@ -33,18 +52,25 @@ jobs:
             issue_url=$(echo "$issue" | base64 --decode | jq -r '.html_url')
             issue_body=$(echo "$issue" | base64 --decode | jq -r '.body')
             issue_comments_url=$(echo "$issue" | base64 --decode | jq -r '.comments_url')
-        
-            # Добавляем информацию о задаче
-            echo "- [$issue_title]($issue_url)" >> report.txt
-            echo "$issue_body" >> report.txt
-            echo "Comments:" >> report.txt
-        
-            # Получаем комментарии для текущей задачи
-            comments=$(curl -s -H "Authorization: Bearer ${{ secrets.MY_GITHUB_TOKEN }}" "$issue_comments_url")
-            echo "$comments" | jq -r '.[] | "- \(.user.login): \(.body)"' >> report.txt
-        
-            # Добавляем пустую строку для разделения задач
-            echo "" >> report.txt
+            issue_closed_at=$(echo "$issue" | base64 --decode | jq -r '.closed_at')
+            
+            # Преобразуем дату закрытия в формат, с которым можно работать
+            issue_closed_date=$(date -d "$issue_closed_at" +%Y-%m-%d)
+            
+            # Проверяем, закрыта ли задача в пределах текущей недели
+            if [[ "$issue_closed_date" > "$START_OF_WEEK" && "$issue_closed_date" < "$END_OF_WEEK" ]]; then
+              # Добавляем информацию о задаче
+              echo "- [$issue_title]($issue_url)" >> report.txt
+              echo "$issue_body" >> report.txt
+              echo "Comments:" >> report.txt
+              
+              # Получаем комментарии для текущей задачи
+              comments=$(curl -s -H "Authorization: Bearer ${{ secrets.MY_GITHUB_TOKEN }}" "$issue_comments_url")
+              echo "$comments" | jq -r '.[] | "- \(.user.login): \(.body)"' >> report.txt
+              
+              # Добавляем пустую строку для разделения задач
+              echo "" >> report.txt
+            fi
           done
         fi
 
