@@ -12,41 +12,23 @@ jobs:
     - name: Set up Node.js 20
       uses: actions/setup-node@v4
       with:
-        node-version: '20'
-
-    - name: Get the start of this week (Monday)
-      id: get_this_week_start
-      run: |
-        # Получаем дату первого дня текущей недели (понедельник)
-        THIS_WEEK_START=$(date --utc --date="last monday" '+%Y-%m-%dT%H:%M:%SZ')
-        echo "This week starts at: $THIS_WEEK_START"
-        echo "THIS_WEEK_START=$THIS_WEEK_START" >> $GITHUB_ENV
+        node-version: '20'  # Использование Node.js 20
 
     - name: Get closed issues from this week
-      id: get_issues
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        echo "Fetching closed issues from this week..."
-        response=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
-          "https://api.github.com/repos/${{ github.repository }}/issues?state=closed&since=${{ env.THIS_WEEK_START }}")
+        THIS_WEEK_START="2024-11-18T00:00:00Z"
+        echo "Fetching closed issues since: $THIS_WEEK_START"
+        curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
+          "https://api.github.com/repos/${{ github.repository }}/issues?state=closed&since=$THIS_WEEK_START" \
+          | jq -r '.[] | select(.html_url and .title) | "- [\(.title)](\(.html_url))"' > report.txt
 
-        echo "Response from GitHub API: $response"
-
-        # Проверим, что ответ - это массив
-        if echo "$response" | jq -e 'type == "array"' > /dev/null; then
-          echo "$response" | jq -r '.[] | select(.html_url and .title) | "- [\(.title)](\(.html_url))"' > report.txt
-        else
-          echo "No issues found or invalid response from GitHub API." > report.txt
-        fi
-
-    - name: Read report content
+    - name: Check if issues were found
       run: |
         if [ -s report.txt ]; then
-          REPORT_CONTENT=$(cat report.txt)
-          echo "report_content=$REPORT_CONTENT" >> $GITHUB_ENV
+          echo "Found closed issues"
+          cat report.txt
         else
-          echo "report_content=No issues closed this week." >> $GITHUB_ENV
+          echo "No closed issues found."
         fi
 
     - name: Send email with report
@@ -54,9 +36,10 @@ jobs:
       with:
         server_address: smtp.gmail.com
         server_port: 587
-        username: ${{ secrets.EMAIL_USERNAME }}
-        password: ${{ secrets.EMAIL_PASSWORD }}
+        username: ${{ secrets.EMAIL_USERNAME }}  # Добавьте это в секцию Secrets
+        password: ${{ secrets.EMAIL_PASSWORD }}  # Добавьте это в секцию Secrets
         subject: Weekly Closed Issues Report
-        body: ${{ env.report_content }}
+        body: |
+          $(< report.txt)
         to: timarnd06@gmail.com
         from: timarnd06@gmail.com
