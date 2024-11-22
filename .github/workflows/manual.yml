@@ -12,20 +12,26 @@ jobs:
     - name: Set up Node.js 20
       uses: actions/setup-node@v4
       with:
-        node-version: '20'  # Использование Node.js 20
+        node-version: '20'
 
-    - name: Get closed issues from last week
+    - name: Get the start of this week (Monday)
+      id: get_this_week_start
+      run: |
+        # Получаем дату первого дня текущей недели (понедельник)
+        THIS_WEEK_START=$(date --utc --date="last monday" '+%Y-%m-%dT%H:%M:%SZ')
+        echo "This week starts at: $THIS_WEEK_START"
+        echo "THIS_WEEK_START=$THIS_WEEK_START" >> $GITHUB_ENV
+
+    - name: Get closed issues from this week
       id: get_issues
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        LAST_WEEK=$(date --utc --date="7 days ago" '+%Y-%m-%dT%H:%M:%SZ')
         curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
-          "https://api.github.com/repos/${{ github.repository }}/issues?state=closed&since=$LAST_WEEK" \
-          | jq '.[] | "- [\(.title)](\(.html_url))"' > report.txt
+          "https://api.github.com/repos/${{ github.repository }}/issues?state=closed&since=${{ env.THIS_WEEK_START }}" \
+          | jq -r '.[] | select(.html_url and .title) | "- [\(.title)](\(.html_url))"' > report.txt
 
     - name: Read report content
-      id: read_report
       run: |
         if [ -s report.txt ]; then
           REPORT_CONTENT=$(cat report.txt)
@@ -38,9 +44,9 @@ jobs:
       with:
         server_address: smtp.gmail.com
         server_port: 587
-        username: ${{ secrets.EMAIL_USERNAME }}  # Gmail логин
-        password: ${{ secrets.EMAIL_PASSWORD }}  # App Password для Gmail
+        username: ${{ secrets.EMAIL_USERNAME }}
+        password: ${{ secrets.EMAIL_PASSWORD }}
         subject: Weekly Closed Issues Report
-        body: ${{ env.report_content }}  # Используем содержимое файла
+        body: ${{ env.report_content }}
         to: timarnd06@gmail.com
         from: timarnd06@gmail.com
