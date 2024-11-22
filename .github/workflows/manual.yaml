@@ -6,6 +6,8 @@ on:
 jobs:
   test-email:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE20: true
     steps:
     - name: Set up Node.js 20
       uses: actions/setup-node@v4
@@ -30,11 +32,11 @@ jobs:
           echo "No closed issues found." > report.txt
         fi
 
-    - name: Encode report content as base64
-      id: encode_report
-      run: |
-        REPORT_CONTENT=$(cat report.txt | base64)
-        echo "report_content=$REPORT_CONTENT" >> $GITHUB_ENV
+    - name: Upload report.txt as artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: weekly-report
+        path: report.txt
 
     - name: Send email with report
       uses: dawidd6/action-send-mail@v4
@@ -45,11 +47,11 @@ jobs:
         password: ${{ secrets.EMAIL_PASSWORD }}  # Добавьте это в секцию Secrets
         subject: Weekly Closed Issues Report
         body: |
-          ${{ env.report_content }}  # Используем переменную для вставки содержимого файла
+          $(cat report.txt)  # Мы можем напрямую получить данные из артефакта
         to: timarnd06@gmail.com
         from: timarnd06@gmail.com
 
-    - name: Decode report content
-      run: |
-        echo "$REPORT_CONTENT" | base64 --decode > report_decoded.txt
-        cat report_decoded.txt
+    - name: Download report artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: weekly-report
